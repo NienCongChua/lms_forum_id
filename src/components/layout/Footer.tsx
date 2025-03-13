@@ -1,8 +1,22 @@
 
 import { Link } from 'react-router-dom';
 import { Facebook, Twitter, Instagram, Linkedin, Github } from 'lucide-react';
+import { useLanguage } from '@/contexts/LanguageContext';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 const Footer = () => {
+  const { language, setLanguage, t } = useLanguage();
+
+  const handleLanguageChange = (value: string) => {
+    setLanguage(value as 'en' | 'vi' | 'fr' | 'es');
+  };
+
   return (
     <footer className="bg-secondary/30 w-full py-12 mt-20">
       <div className="container mx-auto px-4">
@@ -32,73 +46,73 @@ const Footer = () => {
           </div>
 
           <div>
-            <h4 className="font-medium mb-4">Platform</h4>
+            <h4 className="font-medium mb-4">{t('platformTitle')}</h4>
             <ul className="space-y-2">
               <li>
                 <Link to="/forums" className="text-muted-foreground hover:text-primary transition-colors">
-                  Forums
+                  {t('forums')}
                 </Link>
               </li>
               <li>
                 <Link to="/courses" className="text-muted-foreground hover:text-primary transition-colors">
-                  Courses
+                  {t('courses')}
                 </Link>
               </li>
               <li>
                 <Link to="/teachers" className="text-muted-foreground hover:text-primary transition-colors">
-                  Teachers
+                  {t('teachers')}
                 </Link>
               </li>
               <li>
                 <Link to="/resources" className="text-muted-foreground hover:text-primary transition-colors">
-                  Resources
+                  {t('resources')}
                 </Link>
               </li>
             </ul>
           </div>
 
           <div>
-            <h4 className="font-medium mb-4">Support</h4>
+            <h4 className="font-medium mb-4">{t('supportTitle')}</h4>
             <ul className="space-y-2">
               <li>
                 <Link to="/help" className="text-muted-foreground hover:text-primary transition-colors">
-                  Help Center
+                  {t('helpCenter')}
                 </Link>
               </li>
               <li>
                 <Link to="/faq" className="text-muted-foreground hover:text-primary transition-colors">
-                  FAQ
+                  {t('faq')}
                 </Link>
               </li>
               <li>
                 <Link to="/contact" className="text-muted-foreground hover:text-primary transition-colors">
-                  Contact Us
+                  {t('contactUs')}
                 </Link>
               </li>
               <li>
                 <Link to="/feedback" className="text-muted-foreground hover:text-primary transition-colors">
-                  Feedback
+                  {t('feedback')}
                 </Link>
               </li>
             </ul>
           </div>
 
           <div>
-            <h4 className="font-medium mb-4">Legal</h4>
+            <h4 className="font-medium mb-4">{t('legalTitle')}</h4>
             <ul className="space-y-2">
               <li>
                 <Link to="/terms" className="text-muted-foreground hover:text-primary transition-colors">
-                  Terms of Service
+                  {t('termsOfService')}
                 </Link>
               </li>
               <li>
                 <Link to="/privacy" className="text-muted-foreground hover:text-primary transition-colors">
-                  Privacy Policy
+                  {t('privacyPolicy')}
                 </Link>
               </li>
               <li>
                 <Link to="/cookies" className="text-muted-foreground hover:text-primary transition-colors">
-                  Cookie Policy
+                  {t('cookiePolicy')}
                 </Link>
               </li>
             </ul>
@@ -107,15 +121,20 @@ const Footer = () => {
 
         <div className="mt-12 pt-6 border-t border-border flex flex-col md:flex-row justify-between items-center">
           <p className="text-sm text-muted-foreground">
-            © {new Date().getFullYear()} EduForum. All rights reserved.
+            © {new Date().getFullYear()} EduForum. {t('allRightsReserved')}.
           </p>
           <div className="mt-4 md:mt-0">
-            <select className="bg-background border border-border rounded-md text-sm py-1 px-2">
-              <option value="en">English</option>
-              <option value="vi">Tiếng Việt</option>
-              <option value="fr">Français</option>
-              <option value="es">Español</option>
-            </select>
+            <Select value={language} onValueChange={handleLanguageChange}>
+              <SelectTrigger className="w-32 bg-background border border-border rounded-md text-sm">
+                <SelectValue placeholder="Language" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="en">English</SelectItem>
+                <SelectItem value="vi">Tiếng Việt</SelectItem>
+                <SelectItem value="fr">Français</SelectItem>
+                <SelectItem value="es">Español</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </div>
       </div>
