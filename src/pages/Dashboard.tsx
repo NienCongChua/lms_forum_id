@@ -25,7 +25,7 @@ const enrolledCourses = [
     id: "2",
     title: "Digital Marketing Fundamentals",
     progress: 45,
-    thumbnail: "https://images.unsplash.com/photo-1432888622747-4eb9a8f5a07f?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&h=400&q=80",
+    thumbnail: "https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80",
     teacher: "Sarah Johnson",
     nextSession: "Wednesday, 2:00 PM",
     category: "Marketing"
