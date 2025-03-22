@@ -2,35 +2,38 @@
 
 <div align="center">
 
-![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)
-![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)
-![Vite](https://img.shields.io/badge/Vite-646CFF?style=for-the-badge&logo=vite&logoColor=white)
-![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)
-![Nginx](https://img.shields.io/badge/Nginx-009639?style=for-the-badge&logo=nginx&logoColor=white)
-![TailwindCSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)
+<img src="https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB" alt="React" />
+<img src="https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript" />
+<img src="https://img.shields.io/badge/Vite-646CFF?style=for-the-badge&logo=vite&logoColor=white" alt="Vite" />
+<img src="https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white" alt="Docker" />
+<img src="https://img.shields.io/badge/Nginx-009639?style=for-the-badge&logo=nginx&logoColor=white" alt="Nginx" />
+<img src="https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white" alt="TailwindCSS" />
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-Dự án diễn đàn học tập trực tuyến (Learning Management System Forum) được xây dựng bằng React và TypeScript.
+<h3>Dự án diễn đàn học tập trực tuyến</h3>
+<p><i>Learning Management System Forum</i></p>
 
 [English](./README.md) | [Tiếng Việt](./README.vi.md)
 
 </div>
 
+---
+
 ## 📋 Mục lục
 
-- [🚀 Công nghệ sử dụng](#-công-nghệ-sử-dụng)
-- [💻 Yêu cầu hệ thống](#-yêu-cầu-hệ-thống)
-- [🛠️ Cài đặt và Chạy](#️-cài-đặt-và-chạy)
-- [📁 Cấu trúc thư mục](#-cấu-trúc-thư-mục)
-- [🔧 Cấu hình](#-cấu-hình)
-- [📝 Scripts](#-scripts)
-- [🤝 Đóng góp](#-đóng-góp)
-- [📄 License](#-license)
-- [👥 Tác giả](#-tác-giả)
-- [🙏 Cảm ơn](#-cảm-ơn)
+<div align="center">
+
+| [🚀 Công nghệ](#-công-nghệ-sử-dụng) | [💻 Yêu cầu](#-yêu-cầu-hệ-thống) | [🛠️ Cài đặt](#️-cài-đặt-và-chạy) |
+|:-----------------------------------:|:--------------------------------:|:--------------------------------:|
+| [📁 Cấu trúc](#-cấu-trúc-thư-mục) | [🔧 Cấu hình](#-cấu-hình) | [📝 Scripts](#-scripts) |
+| [🤝 Đóng góp](#-đóng-góp) | [📄 License](#-license) | [👥 Tác giả](#-tác-giả) |
+
+</div>
 
 ## 🚀 Công nghệ sử dụng
+
+<div align="center">
 
 <table>
   <tr>
@@ -67,35 +70,57 @@ Dự án diễn đàn học tập trực tuyến (Learning Management System For
   </tr>
 </table>
 
+</div>
+
 ## 💻 Yêu cầu hệ thống
 
-- <img src="https://api.iconify.design/logos:nodejs-icon.svg" width="20" height="20" /> Node.js >= 18
-- <img src="https://api.iconify.design/logos:docker-icon.svg" width="20" height="20" /> Docker và Docker Compose
-- <img src="https://api.iconify.design/logos:npm-icon.svg" width="20" height="20" /> npm hoặc yarn
-- <img src="https://api.iconify.design/logos:git-icon.svg" width="20" height="20" /> Git
+<div align="center">
+
+<table>
+  <tr>
+    <td align="center">
+      <img src="https://api.iconify.design/logos:nodejs-icon.svg" width="32" height="32" />
+      <br/>
+      <sub>Node.js >= 18</sub>
+    </td>
+    <td align="center">
+      <img src="https://api.iconify.design/logos:docker-icon.svg" width="32" height="32" />
+      <br/>
+      <sub>Docker & Compose</sub>
+    </td>
+    <td align="center">
+      <img src="https://api.iconify.design/logos:npm-icon.svg" width="32" height="32" />
+      <br/>
+      <sub>npm hoặc yarn</sub>
+    </td>
+    <td align="center">
+      <img src="https://api.iconify.design/logos:git-icon.svg" width="32" height="32" />
+      <br/>
+      <sub>Git</sub>
+    </td>
+  </tr>
+</table>
+
+</div>
 
 ## 🛠️ Cài đặt và Chạy
 
-### Phương án 1: Chạy trực tiếp
+<div align="center">
 
 <details>
-<summary>Xem hướng dẫn chi tiết</summary>
+<summary><b>Phương án 1: Chạy trực tiếp</b></summary>
 
-1. Clone repository:
 ```bash
-git clone [https://github.com/NienCongChua/lms_forum_id.git]
+# 1. Clone repository
+git clone https://github.com/NienCongChua/lms_forum_id.git
 cd lms_forum_id
-```
 
-2. Cài đặt dependencies:
-```bash
+# 2. Cài đặt dependencies
 npm install
 # hoặc
 yarn install
-```
 
-3. Chạy ứng dụng ở môi trường development:
-```bash
+# 3. Chạy ứng dụng
 npm run dev
 # hoặc
 yarn dev
@@ -105,31 +130,29 @@ yarn dev
 
 </details>
 
-### Phương án 2: Chạy bằng Docker
-
 <details>
-<summary>Xem hướng dẫn chi tiết</summary>
+<summary><b>Phương án 2: Chạy bằng Docker</b></summary>
 
-1. Build và chạy container:
 ```bash
+# 1. Build và chạy container
 docker-compose up --build
-```
 
-2. Chạy ở chế độ background:
-```bash
+# 2. Chạy ở chế độ background
 docker-compose up -d
-```
 
-3. Dừng ứng dụng:
-```bash
+# 3. Dừng ứng dụng
 docker-compose down
 ```
 
-Ứng dụng sẽ chạy tại: `http://localhost:80`
+Ứng dụng sẽ chạy tại: `http://localhost:8008`
 
 </details>
 
+</div>
+
 ## 📁 Cấu trúc thư mục
+
+<div align="center">
 
 ```
 lms_forum_id/
@@ -148,13 +171,15 @@ lms_forum_id/
 └── package.json       # Project dependencies
 ```
 
+</div>
+
 ## 🔧 Cấu hình
 
-### Vite
+<div align="center">
+
 <table>
   <tr>
-    <th>Cấu hình</th>
-    <th>Giá trị</th>
+    <th colspan="2">Vite Configuration</th>
   </tr>
   <tr>
     <td>Port mặc định</td>
@@ -174,11 +199,9 @@ lms_forum_id/
   </tr>
 </table>
 
-### Docker
 <table>
   <tr>
-    <th>Cấu hình</th>
-    <th>Giá trị</th>
+    <th colspan="2">Docker Configuration</th>
   </tr>
   <tr>
     <td>Port</td>
@@ -198,7 +221,11 @@ lms_forum_id/
   </tr>
 </table>
 
+</div>
+
 ## 📝 Scripts
+
+<div align="center">
 
 <table>
   <tr>
@@ -225,11 +252,9 @@ lms_forum_id/
     <td><code>npm run lint</code></td>
     <td>Chạy ESLint</td>
   </tr>
-  <tr>
-    <td><code>npm run type-check</code></td>
-    <td>Kiểm tra TypeScript</td>
-  </tr>
 </table>
+
+</div>
 
 ## 🤝 Đóng góp
 
@@ -237,13 +262,13 @@ lms_forum_id/
 
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)](http://makeapullrequest.com)
 
-</div>
-
 1. Fork dự án
 2. Tạo branch mới (`git checkout -b feature/AmazingFeature`)
 3. Commit thay đổi (`git commit -m 'Add some AmazingFeature'`)
 4. Push lên branch (`git push origin feature/AmazingFeature`)
 5. Mở Pull Request
+
+</div>
 
 ## 📄 License
 
@@ -284,12 +309,14 @@ Dự án được phân phối dưới giấy phép MIT. Xem `LICENSE` để bi�
 [![Vite](https://img.shields.io/badge/Vite-646CFF?style=flat-square&logo=vite&logoColor=white)](https://vitejs.dev/)
 [![Docker](https://img.shields.io/badge/Docker-2496ED?style=flat-square&logo=docker&logoColor=white)](https://www.docker.com/)
 [![Nginx](https://img.shields.io/badge/Nginx-009639?style=flat-square&logo=nginx&logoColor=white)](https://nginx.org/)
+[![TailwindCSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=flat-square&logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
 
 </div>
 
 ---
+
 <div align="center">
 
-Made with ❤️ by [Tên tác giả]
+Made with ❤️ by Richard Jacob
 
 </div>
