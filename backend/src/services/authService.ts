@@ -2,7 +2,7 @@ import { promisify } from 'util';
 import { randomBytes } from 'crypto';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
-import nodemailer from 'nodemailer';
+import { sendEmail } from '../utils/emailUtils';
 import db from '../config/db';
 import { RowDataPacket, ResultSetHeader } from 'mysql2';
 
@@ -12,15 +12,6 @@ const tokenExpiry = '30d';
 
 // Database pool from your existing config
 export const pool = db;
-
-// Email transporter configuration
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.EMAIL_USER || 'your-email@gmail.com',
-    pass: process.env.EMAIL_PASS || 'your-email-password'
-  }
-});
 
 interface User extends RowDataPacket {
   UserID: number;
@@ -66,14 +57,13 @@ export async function registerUser(
   );
 
   // Send verification email
-  // const verificationUrl = `http://localhost:8080/verify-email?token=${verificationToken}`;
+  const verificationUrl = `http://localhost:8080/verify-email?token=${verificationToken}`;
   
-  // await transporter.sendMail({
-  //   from: 'your-email@gmail.com',
-  //   to: email,
-  //   subject: 'Verify your email',
-  //   html: `Please click <a href="${verificationUrl}">here</a> to verify your email.`
-  // });
+  await sendEmail(
+      email,
+      'Verify your email address',
+      `Thank you for registering! Please click the link below to verify your email address:<br><a href="${verificationUrl}">${verificationUrl}</a>`
+  );
 
   return { 
     message: 'Registration successful. Please check your email for verification.',
@@ -148,12 +138,11 @@ export async function forgotPassword(email: string) {
   // Send reset email
   const resetUrl = `http://localhost:8080/reset-password?token=${resetToken}`;
   
-  await transporter.sendMail({
-    from: 'your-email@gmail.com',
-    to: email,
-    subject: 'Password Reset',
-    html: `Please click <a href="${resetUrl}">here</a> to reset your password.`
-  });
+  await sendEmail(
+      email,
+      'Password Reset Request',
+      `You requested a password reset. Please click the link below to set a new password:<br><a href="${resetUrl}">${resetUrl}</a>`
+  );
 }
 
 export async function resetPassword(token: string, newPassword: string) {
@@ -179,6 +168,23 @@ export async function resetPassword(token: string, newPassword: string) {
       'UPDATE Users SET PasswordHash = ?, ResetToken = NULL WHERE UserID = ?',
       [hashedPassword, decoded.userId]
     );
+
+    // Send verification email
+    const verificationToken = jwt.sign(
+      { email: decoded.email, userId: decoded.userId },
+      jwtSecret,
+      { expiresIn: '1d' }
+    );
+
+    const verificationUrl = `http://localhost:8080/verify-email?token=${verificationToken}`;
+    
+    await sendEmail(
+        decoded.email,
+        'Verify your email address',
+        `Thank you for registering! Please click the link below to verify your email address:<br><a href="${verificationUrl}">${verificationUrl}</a>`
+    );
+
+    return { success: true };
   } catch (error) {
     throw new Error('Invalid or expired token');
   }
@@ -236,12 +242,11 @@ export class AuthService {
     // Send verification email
     const verificationUrl = `http://localhost:8080/verify-email?token=${verificationToken}`;
     
-    await transporter.sendMail({
-      from: 'your-email@gmail.com',
-      to: user.email,
-      subject: 'Verify your email',
-      html: `Please click <a href="${verificationUrl}">here</a> to verify your email.`
-    });
+    await sendEmail(
+        user.email,
+        'Verify your email address',
+        `Thank you for registering! Please click the link below to verify your email address:<br><a href="${verificationUrl}">${verificationUrl}</a>`
+    );
 
     return { success: true };
   }
