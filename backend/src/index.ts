@@ -1,21 +1,33 @@
-// import { createConnection } from 'typeorm';
-// import express from 'express';
+import express from 'express';
+import cors from 'cors';
+import { testConnection } from './utils/database';
+import authRoutes from './routes/authRoutes';
+import { authRouter } from './routes/auth';
 
-// const app = express();
-// const port = 3000;
+export const app = express();
+const PORT = process.env.PORT || 3001;
 
-// // Khởi động TypeORM
-// createConnection().then(async (connection) => {
-//   console.log('Database connection established');
+app.use(cors({
+  origin: 'http://localhost:8080', // Update with your frontend URL
+  credentials: true
+}));
+app.use(express.json());
 
-//   // Định nghĩa một route để kiểm tra
-//   app.get('/api/users', async (req, res) => {
-//     const userRepository = connection.getRepository(User);
-//     const users = await userRepository.find();
-//     res.json(users);
-//   });
+// Authentication routes
+app.use('/api/auth', authRoutes);
+app.use('/auth', authRouter);
 
-//   app.listen(port, () => {
-//     console.log(`Backend server is running on http://localhost:${port}`);
-//   });
-// }).catch((error) => console.log('TypeORM connection error: ', error));
+async function main() {
+  try {
+    await testConnection();
+    
+    app.listen(PORT, () => {
+      console.log(`Server running on port ${PORT}`);
+    });
+  } catch (error) {
+    console.error('Failed to start server:', error);
+    process.exit(1);
+  }
+}
+
+main();

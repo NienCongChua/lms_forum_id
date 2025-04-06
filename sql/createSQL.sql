@@ -5,7 +5,7 @@ USE lms_forum_id;
 -- Bảng Users (Quản lý tất cả người dùng: student, teacher, admin)
 CREATE TABLE Users (
     UserID INT AUTO_INCREMENT PRIMARY KEY,
-    Username VARCHAR(255) UNIQUE NOT NULL,
+    -- Username VARCHAR(255) UNIQUE NOT NULL,
     FirstName VARCHAR(255) NOT NULL,
     LastName VARCHAR(255) NOT NULL,
     Email VARCHAR(255) UNIQUE NOT NULL,

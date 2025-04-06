@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -7,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { ArrowLeft, Send } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import AnimatedTransition from '@/components/ui/AnimatedTransition';
+import { forgotPassword } from '@/services/auth';
 
 const ForgotPassword = () => {
   const [email, setEmail] = useState('');
@@ -14,20 +14,35 @@ const ForgotPassword = () => {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const { toast } = useToast();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-    
-    // Simulate API call
-    setTimeout(() => {
-      console.log('Password reset requested for:', email);
-      setIsSubmitting(false);
-      setIsSubmitted(true);
+
+    try {
+      const response = await forgotPassword(email);
+      
+      if (response.error) {
+        toast({
+          title: "Error",
+          description: response.error,
+          variant: "destructive"
+        });
+      } else {
+        setIsSubmitted(true);
+        toast({
+          title: "Reset link sent",
+          description: "Please check your email for password reset instructions.",
+        });
+      }
+    } catch (error) {
       toast({
-        title: "Reset link sent",
-        description: "Please check your email for password reset instructions.",
+        title: "Error",
+        description: "Failed to send reset request",
+        variant: "destructive"
       });
-    }, 1500);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (

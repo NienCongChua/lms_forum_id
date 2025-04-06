@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -7,7 +6,9 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { EyeIcon, EyeOffIcon, UserPlus } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 import AnimatedTransition from '@/components/ui/AnimatedTransition';
+import { register } from '@/services/auth';
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -16,21 +17,77 @@ const Register = () => {
     email: '',
     password: '',
     confirmPassword: '',
-    role: 'student', // Default role
+    role: 'student',
     agreeTerms: false
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const { toast } = useToast();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    const { name, value, type, checked } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value
+    }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Handle registration logic here
-    console.log('Registration with:', formData);
+    setIsLoading(true);
+
+    // Validation
+    if (formData.password !== formData.confirmPassword) {
+      toast({
+        title: "Error",
+        description: "Passwords do not match",
+        variant: "destructive"
+      });
+      setIsLoading(false);
+      return;
+    }
+
+    if (!formData.agreeTerms) {
+      toast({
+        title: "Error",
+        description: "Please agree to the terms",
+        variant: "destructive"
+      });
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      const response = await register({
+        email: formData.email,
+        password: formData.password,
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        role: formData.role
+      });
+
+      if (response.error) {
+        toast({
+          title: "Error",
+          description: response.error,
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "Success",
+          description: "Registration successful. Please check your email.",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Registration failed",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -50,10 +107,10 @@ const Register = () => {
                   id="firstName"
                   name="firstName"
                   type="text"
-                  placeholder="First name"
+                  required
                   value={formData.firstName}
                   onChange={handleChange}
-                  required
+                  disabled={isLoading}
                 />
               </div>
               <div className="space-y-2">
@@ -62,10 +119,10 @@ const Register = () => {
                   id="lastName"
                   name="lastName"
                   type="text"
-                  placeholder="Last name"
+                  required
                   value={formData.lastName}
                   onChange={handleChange}
-                  required
+                  disabled={isLoading}
                 />
               </div>
             </div>
@@ -77,9 +134,10 @@ const Register = () => {
                 name="email"
                 type="email"
                 placeholder="Enter your email"
+                required
                 value={formData.email}
                 onChange={handleChange}
-                required
+                disabled={isLoading}
               />
             </div>
 
@@ -89,16 +147,18 @@ const Register = () => {
                 <Input
                   id="password"
                   name="password"
-                  type={showPassword ? 'text' : 'password'}
+                  type={showPassword ? "text" : "password"}
                   placeholder="Create a password"
+                  required
                   value={formData.password}
                   onChange={handleChange}
-                  required
+                  disabled={isLoading}
                 />
                 <button
                   type="button"
                   className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground"
                   onClick={() => setShowPassword(!showPassword)}
+                  disabled={isLoading}
                 >
                   {showPassword ? (
                     <EyeOffIcon className="h-4 w-4" />
@@ -115,16 +175,18 @@ const Register = () => {
                 <Input
                   id="confirmPassword"
                   name="confirmPassword"
-                  type={showConfirmPassword ? 'text' : 'password'}
+                  type={showConfirmPassword ? "text" : "password"}
                   placeholder="Confirm your password"
+                  required
                   value={formData.confirmPassword}
                   onChange={handleChange}
-                  required
+                  disabled={isLoading}
                 />
                 <button
                   type="button"
                   className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  disabled={isLoading}
                 >
                   {showConfirmPassword ? (
                     <EyeOffIcon className="h-4 w-4" />
@@ -136,47 +198,50 @@ const Register = () => {
             </div>
 
             <div className="space-y-2">
-              <Label>I am a:</Label>
+              <Label>Role</Label>
               <RadioGroup 
-                value={formData.role} 
-                onValueChange={(value) => setFormData(prev => ({ ...prev, role: value }))}
-                className="flex space-x-4"
+                defaultValue="student" 
+                className="flex gap-4"
+                onValueChange={(value) => setFormData({...formData, role: value})}
               >
                 <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="student" id="student" />
-                  <Label htmlFor="student" className="font-normal">Student</Label>
+                  <RadioGroupItem 
+                    value="student" 
+                    id="student"
+                    disabled={isLoading}
+                  />
+                  <Label htmlFor="student">Student</Label>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="teacher" id="teacher" />
-                  <Label htmlFor="teacher" className="font-normal">Teacher</Label>
+                  <RadioGroupItem 
+                    value="teacher" 
+                    id="teacher"
+                    disabled={isLoading}
+                  />
+                  <Label htmlFor="teacher">Teacher</Label>
                 </div>
               </RadioGroup>
             </div>
 
             <div className="flex items-center space-x-2">
-              <Checkbox 
-                id="terms" 
+              <Checkbox
+                id="agreeTerms"
+                name="agreeTerms"
                 checked={formData.agreeTerms}
-                onCheckedChange={(checked) => 
-                  setFormData(prev => ({ ...prev, agreeTerms: checked as boolean }))
-                } 
-                required
+                onCheckedChange={(checked) => setFormData({...formData, agreeTerms: checked as boolean})}
+                disabled={isLoading}
               />
-              <Label htmlFor="terms" className="text-sm font-normal">
+              <Label htmlFor="agreeTerms" className="text-sm font-normal">
                 I agree to the{' '}
                 <Link to="/terms" className="text-primary hover:underline">
-                  Terms of Service
-                </Link>{' '}
-                and{' '}
-                <Link to="/privacy" className="text-primary hover:underline">
-                  Privacy Policy
+                  Terms and Conditions
                 </Link>
               </Label>
             </div>
 
-            <Button type="submit" className="w-full">
+            <Button type="submit" className="w-full" disabled={isLoading}>
               <UserPlus className="h-4 w-4 mr-2" />
-              Create Account
+              {isLoading ? "Creating..." : "Create Account"}
             </Button>
           </form>
 

@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -6,18 +5,49 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { EyeIcon, EyeOffIcon, LogIn } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 import AnimatedTransition from '@/components/ui/AnimatedTransition';
+import { login } from '@/services/auth';
 
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const { toast } = useToast();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Handle login logic here
-    console.log('Login attempt with:', { email, password, rememberMe });
+    setIsLoading(true);
+
+    try {
+      const response = await login(email, password);
+      
+      if (response.error) {
+        toast({
+          title: "Error",
+          description: response.error,
+          variant: "destructive"
+        });
+      } else if (response.token) {
+        toast({
+          title: "Success",
+          description: "Login successful",
+        });
+        if (rememberMe) {
+          localStorage.setItem('rememberMe', 'true');
+        }
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Login failed",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -39,6 +69,7 @@ const Login = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
+                disabled={isLoading}
               />
             </div>
 
@@ -57,6 +88,7 @@ const Login = () => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
+                  disabled={isLoading}
                 />
                 <button
                   type="button"
@@ -76,16 +108,17 @@ const Login = () => {
               <Checkbox 
                 id="remember" 
                 checked={rememberMe}
-                onCheckedChange={(checked) => setRememberMe(checked as boolean)} 
+                onCheckedChange={(checked) => setRememberMe(checked as boolean)}
+                disabled={isLoading}
               />
               <Label htmlFor="remember" className="text-sm font-normal">
                 Remember me for 30 days
               </Label>
             </div>
 
-            <Button type="submit" className="w-full">
+            <Button type="submit" className="w-full" disabled={isLoading}>
               <LogIn className="h-4 w-4 mr-2" />
-              Sign In
+              {isLoading ? "Signing in..." : "Sign In"}
             </Button>
           </form>
 
