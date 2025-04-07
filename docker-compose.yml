@@ -11,4 +11,12 @@ services:
       - ./src:/app/src
     environment:
       - NODE_ENV=production
-    restart: unless-stopped 
+      - PORT=8008
+      - DB_HOST=localhost
+      - DB_USER=root
+      - DB_PASSWORD=12345678
+      - DB_NAME=lms_forum_id
+      - DB_PORT=3306
+      - JWT_SECRET=your_jwt_secret_key_here
+      - FRONTEND_URL=http://localhost:8008
+    restart: unless-stopped

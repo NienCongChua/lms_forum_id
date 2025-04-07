@@ -10,10 +10,12 @@ CREATE TABLE Users (
     LastName VARCHAR(255) NOT NULL,
     Email VARCHAR(255) UNIQUE NOT NULL,
     PasswordHash VARCHAR(500) NOT NULL,
+    code Number(8) UNIQUE,
     Role ENUM('student', 'teacher', 'admin') NOT NULL DEFAULT 'student',
-    Status ENUM('active', 'banned', 'inactive') DEFAULT 'active',
+    Status ENUM('active', 'banned', 'inactive') DEFAULT 'inactive',
     CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    UpdatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    UpdatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    code VARCHAR(8) UNIQUE
 );
 
 -- Bảng Categories (Danh mục khóa học & diễn đàn)

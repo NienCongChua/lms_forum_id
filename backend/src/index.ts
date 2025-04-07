@@ -3,12 +3,16 @@ import cors from 'cors';
 import { testConnection } from './utils/database';
 import authRoutes from './routes/authRoutes';
 import { authRouter } from './routes/auth';
+import dotenv from 'dotenv';
+
+// Load environment variables from .env file
+dotenv.config();
 
 export const app = express();
 const PORT = process.env.PORT || 3001;
 
 app.use(cors({
-  origin: 'http://localhost:8080', // Update with your frontend URL
+  origin: process.env.FRONTEND_URL || 'http://localhost:8080',
   credentials: true
 }));
 app.use(express.json());
@@ -20,7 +24,7 @@ app.use('/auth', authRouter);
 async function main() {
   try {
     await testConnection();
-    
+
     app.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);
     });

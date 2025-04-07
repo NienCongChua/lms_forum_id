@@ -1,4 +1,4 @@
-const API_BASE_URL = 'http://localhost:3001';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
 interface User {
   email: string;
@@ -27,14 +27,14 @@ export const login = async (email: string, password: string): Promise<AuthRespon
 
     const data = await response.json();
     if (!response.ok) throw new Error(data.error || 'Login failed');
-    
+
     if (data.token) {
       localStorage.setItem('authToken', data.token);
     }
-    
+
     return data;
   } catch (error) {
-    return { 
+    return {
       error: error instanceof Error ? error.message : 'Login failed'
     };
   }
@@ -56,10 +56,10 @@ export const register = async (user: User): Promise<AuthResponse> => {
 
     const data = await response.json();
     if (!response.ok) throw new Error(data.error || 'Registration failed');
-    
+
     return data;
   } catch (error) {
-    return { 
+    return {
       error: error instanceof Error ? error.message : 'Registration failed'
     };
   }
@@ -75,47 +75,48 @@ export const forgotPassword = async (email: string): Promise<AuthResponse> => {
 
     const data = await response.json();
     if (!response.ok) throw new Error(data.error || 'Password reset failed');
-    
+
     return data;
   } catch (error) {
-    return { 
+    return {
       error: error instanceof Error ? error.message : 'Password reset failed'
     };
   }
 };
 
-export const resetPassword = async (token: string, newPassword: string): Promise<AuthResponse> => {
+export const resetPassword = async (email: string, code: string, newPassword: string): Promise<AuthResponse> => {
   try {
     const response = await fetch(`${API_BASE_URL}/api/auth/reset-password`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ token, newPassword }),
+      body: JSON.stringify({ email, code, newPassword }),
     });
 
     const data = await response.json();
     if (!response.ok) throw new Error(data.error || 'Password reset failed');
-    
+
     return data;
   } catch (error) {
-    return { 
+    return {
       error: error instanceof Error ? error.message : 'Password reset failed'
     };
   }
 };
 
-export const verifyEmail = async (token: string): Promise<AuthResponse> => {
+export const verifyEmail = async (email: string, code: string): Promise<AuthResponse> => {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/auth/verify-email?token=${token}`, {
-      method: 'GET',
+    const response = await fetch(`${API_BASE_URL}/api/auth/verify-email`, {
+      method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, code }),
     });
 
     const data = await response.json();
     if (!response.ok) throw new Error(data.error || 'Email verification failed');
-    
+
     return data;
   } catch (error) {
-    return { 
+    return {
       error: error instanceof Error ? error.message : 'Email verification failed'
     };
   }
@@ -124,6 +125,25 @@ export const verifyEmail = async (token: string): Promise<AuthResponse> => {
 const getAuthHeader = () => {
   const token = localStorage.getItem('authToken');
   return token ? { 'Authorization': `Bearer ${token}` } : {};
+};
+
+export const resendVerificationCode = async (email: string): Promise<AuthResponse> => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/auth/resend-verification`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }),
+    });
+
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || 'Failed to resend verification code');
+
+    return data;
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error.message : 'Failed to resend verification code'
+    };
+  }
 };
 
 export const logout = async (): Promise<void> => {

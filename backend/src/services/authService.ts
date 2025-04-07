@@ -1,13 +1,21 @@
-import { promisify } from 'util';
-import { randomBytes } from 'crypto';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
 import { sendEmail } from '../utils/emailUtils';
 import db from '../config/db';
 import { RowDataPacket, ResultSetHeader } from 'mysql2';
+import dotenv from 'dotenv';
+import { generateNumericCode } from '../utils/codeGenerator';
+import { getVerificationEmailTemplate, getPasswordResetEmailTemplate } from '../utils/emailTemplates';
+
+dotenv.config();
 
 const saltRounds = 10;
-const jwtSecret = process.env.JWT_SECRET || 'your-secret-key';
+const jwtSecret = process.env.JWT_SECRET || 'default_jwt_secret_for_development';
+
+if (!process.env.JWT_SECRET) {
+  console.warn('WARNING: JWT_SECRET is not set in environment variables. Using default secret for development only.');
+}
+
 const tokenExpiry = '30d';
 
 // Database pool from your existing config
@@ -42,32 +50,28 @@ export async function registerUser(
 
   // Hash password
   const hashedPassword = await bcrypt.hash(password, saltRounds);
-  
-  // Create user
+
+  // Generate a random 8-digit verification code
+  const verificationCode = generateNumericCode(8);
+
+  // Create user with verification code
   const [result] = await pool.query<ResultSetHeader>(
-    'INSERT INTO Users (Email, PasswordHash, FirstName, LastName, Role) VALUES (?, ?, ?, ?, ?)',
-    [email, hashedPassword, firstName, lastName, role]
+    'INSERT INTO Users (Email, PasswordHash, FirstName, LastName, Role, VerificationCode) VALUES (?, ?, ?, ?, ?, ?)',
+    [email, hashedPassword, firstName, lastName, role, verificationCode]
   );
 
-  // Generate verification token
-  const verificationToken = jwt.sign(
-    { email, userId: result.insertId },
-    jwtSecret,
-    { expiresIn: '1d' }
-  );
+  // Send verification email with code
+  const emailHtml = getVerificationEmailTemplate(firstName, verificationCode);
 
-  // Send verification email
-  const verificationUrl = `http://localhost:8080/verify-email?token=${verificationToken}`;
-  
   await sendEmail(
       email,
-      'Verify your email address',
-      `Thank you for registering! Please click the link below to verify your email address:<br><a href="${verificationUrl}">${verificationUrl}</a>`
+      'Verify Your LMS FORUM ID Account',
+      emailHtml
   );
 
-  return { 
-    message: 'Registration successful. Please check your email for verification.',
-    userId: result.insertId 
+  return {
+    message: 'Registration successful. Please check your email for the verification code.',
+    userId: result.insertId
   };
 }
 
@@ -83,7 +87,7 @@ export async function loginUser(email: string, password: string) {
   }
 
   const user = users[0];
-  
+
   // Check password
   const isValidPassword = await bcrypt.compare(password, user.PasswordHash);
   if (!isValidPassword) {
@@ -97,10 +101,10 @@ export async function loginUser(email: string, password: string) {
 
   // Generate JWT token
   const token = jwt.sign(
-    { 
+    {
       userId: user.UserID,
       email: user.Email,
-      role: user.Role 
+      role: user.Role
     },
     jwtSecret,
     { expiresIn: tokenExpiry }
@@ -121,87 +125,142 @@ export async function forgotPassword(email: string) {
   }
 
   const user = users[0];
-  
-  // Generate reset token
-  const resetToken = jwt.sign(
-    { email: user.Email, userId: user.UserID },
-    jwtSecret,
-    { expiresIn: '1h' }
-  );
 
-  // Save reset token to database
+  // Generate reset code (8 digits)
+  const resetCode = generateNumericCode(8);
+
+  // Save reset code to database
   await pool.query<ResultSetHeader>(
-    'UPDATE Users SET ResetToken = ? WHERE UserID = ?',
-    [resetToken, user.UserID]
+    'UPDATE Users SET VerificationCode = ? WHERE UserID = ?',
+    [resetCode, user.UserID]
   );
 
-  // Send reset email
-  const resetUrl = `http://localhost:8080/reset-password?token=${resetToken}`;
-  
+  // Send reset email with code
+  const emailHtml = getPasswordResetEmailTemplate(user.FirstName, resetCode);
+
   await sendEmail(
       email,
-      'Password Reset Request',
-      `You requested a password reset. Please click the link below to set a new password:<br><a href="${resetUrl}">${resetUrl}</a>`
+      'Reset Your LMS FORUM ID Password',
+      emailHtml
   );
+
+  return { success: true, message: 'Password reset code sent to your email' };
 }
 
-export async function resetPassword(token: string, newPassword: string) {
+export async function resetPassword(email: string, code: string, newPassword: string) {
   try {
-    // Verify token
-    const decoded = jwt.verify(token, jwtSecret) as { email: string, userId: number };
-    
-    // Find user
+    // Find user with matching email and verification code
     const [users] = await pool.query<User[]>(
-      'SELECT * FROM Users WHERE UserID = ? AND ResetToken = ?',
-      [decoded.userId, token]
+      'SELECT * FROM Users WHERE Email = ? AND VerificationCode = ?',
+      [email, code]
     );
 
     if (users.length === 0) {
-      throw new Error('Invalid or expired token');
+      throw new Error('Invalid verification code');
     }
+
+    const user = users[0];
 
     // Hash new password
     const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
-    
-    // Update password and clear reset token
+
+    // Update password and clear verification code
     await pool.query<ResultSetHeader>(
-      'UPDATE Users SET PasswordHash = ?, ResetToken = NULL WHERE UserID = ?',
-      [hashedPassword, decoded.userId]
+      'UPDATE Users SET PasswordHash = ?, VerificationCode = NULL WHERE UserID = ?',
+      [hashedPassword, user.UserID]
     );
 
-    // Send verification email
-    const verificationToken = jwt.sign(
-      { email: decoded.email, userId: decoded.userId },
-      jwtSecret,
-      { expiresIn: '1d' }
-    );
-
-    const verificationUrl = `http://localhost:8080/verify-email?token=${verificationToken}`;
-    
+    // Send confirmation email
     await sendEmail(
-        decoded.email,
-        'Verify your email address',
-        `Thank you for registering! Please click the link below to verify your email address:<br><a href="${verificationUrl}">${verificationUrl}</a>`
+        email,
+        'Password Reset Successful - LMS FORUM ID',
+        `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e5e7eb; border-radius: 5px;">
+          <h2 style="color: #3b82f6;">Password Reset Successful</h2>
+          <p>Hello ${user.FirstName},</p>
+          <p>Your password has been successfully reset. You can now log in with your new password.</p>
+          <p>If you did not request this change, please contact our support team immediately.</p>
+          <p>Best regards,<br>The LMS FORUM ID Team</p>
+        </div>
+        `
     );
 
-    return { success: true };
+    return { success: true, message: 'Password has been reset successfully' };
   } catch (error) {
-    throw new Error('Invalid or expired token');
+    if (error instanceof Error) {
+      throw error;
+    }
+    throw new Error('Password reset failed');
   }
 }
 
-export async function verifyEmail(token: string) {
+export async function verifyEmail(email: string, code: string) {
   try {
-    // Verify token
-    const decoded = jwt.verify(token, jwtSecret) as { email: string, userId: number };
-    
-    // Update user status
-    await pool.query<ResultSetHeader>(
-      'UPDATE Users SET Status = "active" WHERE UserID = ?',
-      [decoded.userId]
+    // Find user with matching email and verification code
+    const [users] = await pool.query<User[]>(
+      'SELECT * FROM Users WHERE Email = ? AND VerificationCode = ?',
+      [email, code]
     );
+
+    if (users.length === 0) {
+      throw new Error('Invalid verification code');
+    }
+
+    const user = users[0];
+
+    // Update user status and clear verification code
+    await pool.query<ResultSetHeader>(
+      'UPDATE Users SET Status = "active", VerificationCode = NULL WHERE UserID = ?',
+      [user.UserID]
+    );
+
+    return { success: true, message: 'Email verified successfully' };
   } catch (error) {
-    throw new Error('Invalid or expired token');
+    if (error instanceof Error) {
+      throw error;
+    }
+    throw new Error('Verification failed');
+  }
+}
+
+export async function resendVerificationCode(email: string) {
+  try {
+    // Find user
+    const [users] = await pool.query<User[]>(
+      'SELECT * FROM Users WHERE Email = ?',
+      [email]
+    );
+
+    if (users.length === 0) {
+      throw new Error('Email not found');
+    }
+
+    const user = users[0];
+
+    // Generate a new verification code
+    const verificationCode = generateNumericCode(8);
+
+    // Update the verification code in the database
+    await pool.query<ResultSetHeader>(
+      'UPDATE Users SET VerificationCode = ? WHERE UserID = ?',
+      [verificationCode, user.UserID]
+    );
+
+    // Send verification email with the new code
+    const emailHtml = getVerificationEmailTemplate(user.FirstName, verificationCode);
+
+    await sendEmail(
+        email,
+        'Verify Your LMS FORUM ID Account',
+        emailHtml
+    );
+
+    return { success: true, message: 'Verification code resent to your email' };
+  } catch (error) {
+    if (error instanceof Error) {
+      throw error;
+    }
+    throw new Error('Failed to resend verification code');
   }
 }
 
@@ -212,7 +271,7 @@ export class AuthService {
     firstName: string;
     lastName: string;
     role?: string;
-  }): Promise<{ success: boolean }> {
+  }): Promise<{ success: boolean; message: string }> {
     // Check if user exists
     const [existingUsers] = await pool.query<User[]>(
       'SELECT * FROM Users WHERE Email = ?',
@@ -225,29 +284,28 @@ export class AuthService {
 
     // Hash password
     const hashedPassword = await bcrypt.hash(user.password, saltRounds);
-    
-    // Create user
+
+    // Generate a random 8-digit verification code
+    const verificationCode = generateNumericCode(8);
+
+    // Create user with verification code
     const [result] = await pool.query<ResultSetHeader>(
-      'INSERT INTO Users (Email, PasswordHash, FirstName, LastName, Role) VALUES (?, ?, ?, ?, ?)',
-      [user.email, hashedPassword, user.firstName, user.lastName, user.role || 'student']
+      'INSERT INTO Users (Email, PasswordHash, FirstName, LastName, Role, VerificationCode) VALUES (?, ?, ?, ?, ?, ?)',
+      [user.email, hashedPassword, user.firstName, user.lastName, user.role || 'student', verificationCode]
     );
 
-    // Generate verification token
-    const verificationToken = jwt.sign(
-      { email: user.email, userId: result.insertId },
-      jwtSecret,
-      { expiresIn: '1d' }
-    );
+    // Send verification email with code
+    const emailHtml = getVerificationEmailTemplate(user.firstName, verificationCode);
 
-    // Send verification email
-    const verificationUrl = `http://localhost:8080/verify-email?token=${verificationToken}`;
-    
     await sendEmail(
         user.email,
-        'Verify your email address',
-        `Thank you for registering! Please click the link below to verify your email address:<br><a href="${verificationUrl}">${verificationUrl}</a>`
+        'Verify Your LMS FORUM ID Account',
+        emailHtml
     );
 
-    return { success: true };
+    return {
+      success: true,
+      message: 'Registration successful. Please check your email for the verification code.'
+    };
   }
 }

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -32,6 +32,8 @@ const Register = () => {
       [name]: type === 'checkbox' ? checked : value
     }));
   };
+
+  const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -76,8 +78,10 @@ const Register = () => {
       } else {
         toast({
           title: "Success",
-          description: "Registration successful. Please check your email.",
+          description: "Registration successful. Please check your email for the verification code.",
         });
+        // Navigate to verification page with email as query parameter
+        navigate(`/verify-email?email=${encodeURIComponent(formData.email)}`);
       }
     } catch (error) {
       toast({
@@ -199,22 +203,22 @@ const Register = () => {
 
             <div className="space-y-2">
               <Label>Role</Label>
-              <RadioGroup 
-                defaultValue="student" 
+              <RadioGroup
+                defaultValue="student"
                 className="flex gap-4"
                 onValueChange={(value) => setFormData({...formData, role: value})}
               >
                 <div className="flex items-center space-x-2">
-                  <RadioGroupItem 
-                    value="student" 
+                  <RadioGroupItem
+                    value="student"
                     id="student"
                     disabled={isLoading}
                   />
                   <Label htmlFor="student">Student</Label>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <RadioGroupItem 
-                    value="teacher" 
+                  <RadioGroupItem
+                    value="teacher"
                     id="teacher"
                     disabled={isLoading}
                   />

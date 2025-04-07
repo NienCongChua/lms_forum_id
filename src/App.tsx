@@ -12,6 +12,9 @@ import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
+import ResetCodeVerification from "./pages/ResetCodeVerification";
+import VerificationEmailByCode from "./pages/VerificationEmailByCode";
 import Dashboard from "./pages/Dashboard";
 import Forums from "./pages/Forums";
 import ForumDetail from "./pages/ForumDetail";
@@ -39,7 +42,7 @@ const queryClient = new QueryClient();
 // AnimatePresence wrapper component
 const AnimatedRoutes = () => {
   const location = useLocation();
-  
+
   return (
     <AnimatePresence mode="wait">
       <Routes location={location} key={location.pathname}>
@@ -47,6 +50,9 @@ const AnimatedRoutes = () => {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/reset-code-verification" element={<ResetCodeVerification />} />
+        <Route path="/verify-email" element={<VerificationEmailByCode />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/forums" element={<Forums />} />
         <Route path="/forums/:id" element={<ForumDetail />} />

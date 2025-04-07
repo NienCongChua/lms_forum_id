@@ -156,7 +156,7 @@ docker-compose down
 
 ```
 lms_forum_id/
-├── src/                # Source code
+├── src/               # Source code
 ├── public/            # Static files
 ├── backend/           # Backend code
 ├── Dockerfile         # Docker configuration

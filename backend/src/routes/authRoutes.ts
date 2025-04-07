@@ -4,7 +4,8 @@ import {
   loginUser,
   forgotPassword,
   resetPassword,
-  verifyEmail
+  verifyEmail,
+  resendVerificationCode
 } from '../services/authService';
 
 const router = Router();
@@ -57,9 +58,9 @@ router.post('/forgot-password', async (req, res) => {
 // Reset password
 router.post('/reset-password', async (req, res) => {
   try {
-    const { token, newPassword } = req.body;
-    await resetPassword(token, newPassword);
-    res.json({ message: 'Password updated successfully' });
+    const { email, code, newPassword } = req.body;
+    const result = await resetPassword(email, code, newPassword);
+    res.json(result);
   } catch (error: unknown) {
     if (error instanceof Error) {
       res.status(400).json({ error: error.message });
@@ -70,11 +71,26 @@ router.post('/reset-password', async (req, res) => {
 });
 
 // Email verification
-router.get('/verify-email', async (req, res) => {
+router.post('/verify-email', async (req, res) => {
   try {
-    const { token } = req.query;
-    await verifyEmail(token as string);
-    res.json({ message: 'Email verified successfully' });
+    const { email, code } = req.body;
+    const result = await verifyEmail(email, code);
+    res.json(result);
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      res.status(400).json({ error: error.message });
+    } else {
+      res.status(500).json({ error: 'An unknown error occurred' });
+    }
+  }
+});
+
+// Resend verification code
+router.post('/resend-verification', async (req, res) => {
+  try {
+    const { email } = req.body;
+    const result = await resendVerificationCode(email);
+    res.json(result);
   } catch (error: unknown) {
     if (error instanceof Error) {
       res.status(400).json({ error: error.message });

@@ -76,20 +76,20 @@ export async function sendEmail(to: string, subject: string, html: string) {
         const gmail = google.gmail({ version: 'v1', auth: oAuth2Client });
 
         // Lấy địa chỉ email của người dùng đã xác thực từ token info
-         let fromEmail: string | null | undefined = 'me'; // Mặc định là 'me'
-         try {
-             // Thử lấy thông tin người dùng để lấy email 'from'
-             // Lưu ý: Cần scope 'https://www.googleapis.com/auth/userinfo.email' trong token.json để hoạt động
-             const tokenInfo = await oAuth2Client.getTokenInfo(oAuth2Client.credentials.access_token!);
-             fromEmail = tokenInfo.email;
-             if (!fromEmail) {
-                  console.warn("Could not get email from token info, using 'me'. Ensure 'userinfo.email' scope is granted.");
-                  fromEmail = 'me';
-             }
-         } catch (tokenInfoError) {
-              console.warn("Error fetching token info, using 'me' as sender.", tokenInfoError);
-              fromEmail = 'me';
-         }
+        let fromEmail: string = "me"; // Mặc định là 'me'
+        // try {
+        //     // Thử lấy thông tin người dùng để lấy email 'from'
+        //     // Lưu ý: Cần scope 'https://www.googleapis.com/auth/userinfo.email' trong token.json để hoạt động
+        //     const tokenInfo = await oAuth2Client.getTokenInfo(oAuth2Client.credentials.access_token!);
+        //     fromEmail = tokenInfo.email;
+        //     if (!fromEmail) {
+        //         console.warn("Could not get email from token info, using 'me'. Ensure 'userinfo.email' scope is granted.");
+        //         fromEmail = 'me';
+        //     }
+        // } catch (tokenInfoError) {
+        //     console.warn("Error fetching token info, using 'me' as sender.", tokenInfoError);
+        //     fromEmail = 'me';
+        // }
 
 
         const emailLines = [
