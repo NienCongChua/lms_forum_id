@@ -21,7 +21,7 @@ const tokenExpiry = '30d';
 // Database pool from your existing config
 export const pool = db;
 
-interface User extends RowDataPacket {
+export interface User extends RowDataPacket {
   UserID: number;
   Email: string;
   PasswordHash: string;
@@ -29,6 +29,7 @@ interface User extends RowDataPacket {
   LastName: string;
   Role: string;
   Status: string;
+  VerificationCode: string | null;
 }
 
 export async function registerUser(
@@ -44,21 +45,36 @@ export async function registerUser(
     [email]
   );
 
-  if (existingUsers.length > 0) {
-    throw new Error('Email already registered');
-  }
-
   // Hash password
   const hashedPassword = await bcrypt.hash(password, saltRounds);
 
   // Generate a random 8-digit verification code
   const verificationCode = generateNumericCode(8);
 
-  // Create user with verification code
-  const [result] = await pool.query<ResultSetHeader>(
-    'INSERT INTO Users (Email, PasswordHash, FirstName, LastName, Role, VerificationCode) VALUES (?, ?, ?, ?, ?, ?)',
-    [email, hashedPassword, firstName, lastName, role, verificationCode]
-  );
+  let result;
+
+  if (existingUsers.length > 0) {
+    // Check if the existing account is inactive
+    if (existingUsers[0].Status !== 'inactive') {
+      throw new Error('Email already registered');
+    }
+
+    // If account is inactive, update it instead of creating a new one
+    await pool.query<ResultSetHeader>(
+      'UPDATE Users SET PasswordHash = ?, FirstName = ?, LastName = ?, Role = ?, VerificationCode = ? WHERE UserID = ?',
+      [hashedPassword, firstName, lastName, role, verificationCode, existingUsers[0].UserID]
+    );
+
+    result = { insertId: existingUsers[0].UserID };
+  } else {
+    // Create new user with verification code
+    const [insertResult] = await pool.query<ResultSetHeader>(
+      'INSERT INTO Users (Email, PasswordHash, FirstName, LastName, Role, VerificationCode) VALUES (?, ?, ?, ?, ?, ?)',
+      [email, hashedPassword, firstName, lastName, role, verificationCode]
+    );
+
+    result = insertResult;
+  }
 
   // Send verification email with code
   const emailHtml = getVerificationEmailTemplate(firstName, verificationCode);
@@ -126,6 +142,11 @@ export async function forgotPassword(email: string) {
 
   const user = users[0];
 
+  // Check if the account is active
+  if (user.Status !== 'active') {
+    throw new Error('Account is not active. Please verify your email first.');
+  }
+
   // Generate reset code (8 digits)
   const resetCode = generateNumericCode(8);
 
@@ -147,6 +168,40 @@ export async function forgotPassword(email: string) {
   return { success: true, message: 'Password reset code sent to your email' };
 }
 
+export async function verifyResetCode(email: string, code: string) {
+  try {
+    // Find user with matching email and verification code
+    const [users] = await pool.query<User[]>(
+      'SELECT * FROM Users WHERE Email = ? AND VerificationCode = ?',
+      [email, code]
+    );
+
+    if (users.length === 0) {
+      // If no user found with the exact code, try to find the user by email
+      const [usersByEmail] = await pool.query<User[]>(
+        'SELECT * FROM Users WHERE Email = ?',
+        [email]
+      );
+
+      if (usersByEmail.length > 0) {
+        // User exists but code doesn't match
+        throw new Error('Invalid verification code');
+      } else {
+        // No user with this email
+        throw new Error('User not found');
+      }
+    }
+
+    // Code is valid
+    return { success: true, message: 'Verification code is valid' };
+  } catch (error) {
+    if (error instanceof Error) {
+      throw error;
+    }
+    throw new Error('Verification failed');
+  }
+}
+
 export async function resetPassword(email: string, code: string, newPassword: string) {
   try {
     // Find user with matching email and verification code
@@ -156,7 +211,19 @@ export async function resetPassword(email: string, code: string, newPassword: st
     );
 
     if (users.length === 0) {
-      throw new Error('Invalid verification code');
+      // If no user found with the exact code, try to find the user by email
+      const [usersByEmail] = await pool.query<User[]>(
+        'SELECT * FROM Users WHERE Email = ?',
+        [email]
+      );
+
+      if (usersByEmail.length > 0) {
+        // User exists but code doesn't match
+        throw new Error('Invalid or expired verification code');
+      } else {
+        // No user with this email
+        throw new Error('User not found');
+      }
     }
 
     const user = users[0];
@@ -169,6 +236,14 @@ export async function resetPassword(email: string, code: string, newPassword: st
       'UPDATE Users SET PasswordHash = ?, VerificationCode = NULL WHERE UserID = ?',
       [hashedPassword, user.UserID]
     );
+
+    // If the user was inactive, activate their account
+    if (user.Status === 'inactive') {
+      await pool.query<ResultSetHeader>(
+        'UPDATE Users SET Status = "active" WHERE UserID = ?',
+        [user.UserID]
+      );
+    }
 
     // Send confirmation email
     await sendEmail(
@@ -196,6 +271,8 @@ export async function resetPassword(email: string, code: string, newPassword: st
 
 export async function verifyEmail(email: string, code: string) {
   try {
+    console.log(`Verifying email: ${email} with code: ${code}`);
+
     // Find user with matching email and verification code
     const [users] = await pool.query<User[]>(
       'SELECT * FROM Users WHERE Email = ? AND VerificationCode = ?',
@@ -203,10 +280,38 @@ export async function verifyEmail(email: string, code: string) {
     );
 
     if (users.length === 0) {
+      // Check if user exists but code doesn't match
+      const [usersByEmail] = await pool.query<User[]>(
+        'SELECT * FROM Users WHERE Email = ?',
+        [email]
+      );
+
+      if (usersByEmail.length === 0) {
+        throw new Error('Email not found');
+      }
+
+      const user = usersByEmail[0];
+
+      // Check if user is already verified
+      if (user.Status === 'active' && user.VerificationCode === null) {
+        return { success: true, message: 'Your account is already verified. You can login now.' };
+      }
+
+      // Otherwise, code is invalid
       throw new Error('Invalid verification code');
     }
 
     const user = users[0];
+
+    // Check if user is already active
+    if (user.Status === 'active') {
+      // Just clear the verification code
+      await pool.query<ResultSetHeader>(
+        'UPDATE Users SET VerificationCode = NULL WHERE UserID = ?',
+        [user.UserID]
+      );
+      return { success: true, message: 'Your account is already verified. You can login now.' };
+    }
 
     // Update user status and clear verification code
     await pool.query<ResultSetHeader>(
@@ -214,8 +319,11 @@ export async function verifyEmail(email: string, code: string) {
       [user.UserID]
     );
 
+    console.log(`Email verified successfully for: ${email}`);
+
     return { success: true, message: 'Email verified successfully' };
   } catch (error) {
+    console.error('Email verification error:', error);
     if (error instanceof Error) {
       throw error;
     }
@@ -278,21 +386,30 @@ export class AuthService {
       [user.email]
     );
 
-    if (existingUsers.length > 0) {
-      throw new Error('Email already registered');
-    }
-
     // Hash password
     const hashedPassword = await bcrypt.hash(user.password, saltRounds);
 
     // Generate a random 8-digit verification code
     const verificationCode = generateNumericCode(8);
 
-    // Create user with verification code
-    const [result] = await pool.query<ResultSetHeader>(
-      'INSERT INTO Users (Email, PasswordHash, FirstName, LastName, Role, VerificationCode) VALUES (?, ?, ?, ?, ?, ?)',
-      [user.email, hashedPassword, user.firstName, user.lastName, user.role || 'student', verificationCode]
-    );
+    if (existingUsers.length > 0) {
+      // Check if the existing account is inactive
+      if (existingUsers[0].Status !== 'inactive') {
+        throw new Error('Email already registered');
+      }
+
+      // If account is inactive, update it instead of deleting and recreating
+      await pool.query<ResultSetHeader>(
+        'UPDATE Users SET PasswordHash = ?, FirstName = ?, LastName = ?, Role = ?, VerificationCode = ? WHERE UserID = ?',
+        [hashedPassword, user.firstName, user.lastName, user.role || 'student', verificationCode, existingUsers[0].UserID]
+      );
+    } else {
+      // Create new user with verification code
+      await pool.query<ResultSetHeader>(
+        'INSERT INTO Users (Email, PasswordHash, FirstName, LastName, Role, VerificationCode) VALUES (?, ?, ?, ?, ?, ?)',
+        [user.email, hashedPassword, user.firstName, user.lastName, user.role || 'student', verificationCode]
+      );
+    }
 
     // Send verification email with code
     const emailHtml = getVerificationEmailTemplate(user.firstName, verificationCode);

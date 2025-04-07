@@ -1,7 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import { testConnection } from './utils/database';
-import authRoutes from './routes/authRoutes';
+import authRoutes from './routes/authRoutes'; // Main auth routes
 import { authRouter } from './routes/auth';
 import dotenv from 'dotenv';
 

@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -16,6 +16,21 @@ const Login = () => {
   const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+  const location = useLocation();
+
+  // Log when the component mounts
+  useEffect(() => {
+    console.log('Login page mounted');
+
+    // Check if we came from password reset
+    const fromReset = location.state?.fromReset || false;
+    if (fromReset) {
+      toast({
+        title: "Ready to login",
+        description: "Your password has been reset. Please login with your new password.",
+      });
+    }
+  }, [location, toast]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -23,7 +38,7 @@ const Login = () => {
 
     try {
       const response = await login(email, password);
-      
+
       if (response.error) {
         toast({
           title: "Error",
@@ -50,8 +65,16 @@ const Login = () => {
     }
   };
 
+  // Force a re-render when the component mounts
+  const [key, setKey] = useState(Date.now());
+
+  useEffect(() => {
+    // Reset the key to force a re-render
+    setKey(Date.now());
+  }, []);
+
   return (
-    <AnimatedTransition>
+    <AnimatedTransition key={key}>
       <div className="container mx-auto px-4 max-w-md py-12">
         <div className="bg-card border border-border rounded-xl p-8 shadow-sm">
           <div className="text-center mb-6">
@@ -105,8 +128,8 @@ const Login = () => {
             </div>
 
             <div className="flex items-center space-x-2">
-              <Checkbox 
-                id="remember" 
+              <Checkbox
+                id="remember"
                 checked={rememberMe}
                 onCheckedChange={(checked) => setRememberMe(checked as boolean)}
                 disabled={isLoading}

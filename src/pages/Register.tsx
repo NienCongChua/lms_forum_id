@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { saveSession, SESSION_KEYS, generateToken } from '@/utils/sessionToken';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -76,12 +77,23 @@ const Register = () => {
           variant: "destructive"
         });
       } else {
+        // Generate a secure token for this session
+        const token = generateToken();
+
+        // Save registration data to session storage
+        saveSession(SESSION_KEYS.REGISTRATION, {
+          email: formData.email,
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          token: token
+        });
+
         toast({
           title: "Success",
           description: "Registration successful. Please check your email for the verification code.",
         });
-        // Navigate to verification page with email as query parameter
-        navigate(`/verify-email?email=${encodeURIComponent(formData.email)}`);
+        // Navigate to verification page with email and token as query parameters
+        navigate(`/verify-email?email=${encodeURIComponent(formData.email)}&token=${encodeURIComponent(token)}`);
       }
     } catch (error) {
       toast({

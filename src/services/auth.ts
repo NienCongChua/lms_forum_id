@@ -84,6 +84,27 @@ export const forgotPassword = async (email: string): Promise<AuthResponse> => {
   }
 };
 
+export const verifyResetCode = async (email: string, code: string): Promise<AuthResponse> => {
+  try {
+    // Make a request to verify the reset code without changing the password
+    const response = await fetch(`${API_BASE_URL}/api/auth/verify-reset-code`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, code }),
+    });
+
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || 'Code verification failed');
+
+    return data;
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error.message : 'Code verification failed',
+      success: false
+    };
+  }
+};
+
 export const resetPassword = async (email: string, code: string, newPassword: string): Promise<AuthResponse> => {
   try {
     const response = await fetch(`${API_BASE_URL}/api/auth/reset-password`, {
