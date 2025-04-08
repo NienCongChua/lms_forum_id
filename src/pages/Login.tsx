@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -8,6 +8,7 @@ import { EyeIcon, EyeOffIcon, LogIn } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import AnimatedTransition from '@/components/ui/AnimatedTransition';
 import { login } from '@/services/auth';
+import { useAuth } from '@/contexts/AuthContext';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -17,6 +18,8 @@ const Login = () => {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   const location = useLocation();
+  const navigate = useNavigate();
+  const { login: authLogin, redirectToRoleDashboard } = useAuth();
 
   // Log when the component mounts
   useEffect(() => {
@@ -37,7 +40,7 @@ const Login = () => {
     setIsLoading(true);
 
     try {
-      const response = await login(email, password);
+      const response = await login(email, password, rememberMe);
 
       if (response.error) {
         toast({
@@ -45,14 +48,17 @@ const Login = () => {
           description: response.error,
           variant: "destructive"
         });
-      } else if (response.token) {
+      } else if (response.token && response.user) {
+        // Save user info to auth context
+        authLogin(response.token, rememberMe);
+
         toast({
           title: "Success",
           description: "Login successful",
         });
-        if (rememberMe) {
-          localStorage.setItem('rememberMe', 'true');
-        }
+
+        // Redirect based on user role
+        redirectToRoleDashboard();
       }
     } catch (error) {
       toast({

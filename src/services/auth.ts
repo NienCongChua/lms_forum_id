@@ -1,6 +1,6 @@
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
-interface User {
+interface RegisterUser {
   email: string;
   password: string;
   firstName: string;
@@ -8,28 +8,44 @@ interface User {
   role?: string;
 }
 
+interface User {
+  userId: number;
+  email: string;
+  role: string;
+  firstName: string;
+  lastName: string;
+}
+
 interface AuthResponse {
   token?: string;
+  user?: User;
   message?: string;
   userId?: number;
   error?: string;
   success?: boolean;
 }
 
-export const login = async (email: string, password: string): Promise<AuthResponse> => {
+export const login = async (email: string, password: string, rememberMe: boolean = false): Promise<AuthResponse> => {
   try {
     const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ email, password, rememberMe }),
     });
 
     const data = await response.json();
     if (!response.ok) throw new Error(data.error || 'Login failed');
 
     if (data.token) {
-      localStorage.setItem('authToken', data.token);
+      // Store token based on remember me option
+      if (rememberMe) {
+        localStorage.setItem('authToken', data.token);
+        sessionStorage.removeItem('authToken');
+      } else {
+        sessionStorage.setItem('authToken', data.token);
+        localStorage.removeItem('authToken');
+      }
     }
 
     return data;
@@ -40,7 +56,7 @@ export const login = async (email: string, password: string): Promise<AuthRespon
   }
 };
 
-export const register = async (user: User): Promise<AuthResponse> => {
+export const register = async (user: RegisterUser): Promise<AuthResponse> => {
   try {
     const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
       method: 'POST',
@@ -169,4 +185,5 @@ export const resendVerificationCode = async (email: string): Promise<AuthRespons
 
 export const logout = async (): Promise<void> => {
   localStorage.removeItem('authToken');
+  sessionStorage.removeItem('authToken');
 };

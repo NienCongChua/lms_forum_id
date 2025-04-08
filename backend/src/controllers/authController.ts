@@ -29,9 +29,9 @@ export const register = async (req: Request, res: Response) => {
 // User login
 export const login = async (req: Request, res: Response) => {
   try {
-    const { email, password } = req.body;
-    const token = await loginUser(email, password);
-    res.json({ token });
+    const { email, password, rememberMe } = req.body;
+    const result = await loginUser(email, password, rememberMe);
+    res.json(result);
   } catch (error: unknown) {
     if (error instanceof Error) {
       res.status(401).json({ error: error.message });
@@ -85,7 +85,7 @@ export const resetPasswordHandler = async (req: Request, res: Response) => {
             [req.body.email]
           );
 
-          if (users.length > 0 && users[0].VerificationCode === null) {
+          if (users.length > 0 && users[0].code === null) {
             // The verification code is null, which means the password was reset successfully
             res.json({ success: true, message: 'Password has been reset successfully' });
             return;

@@ -16,7 +16,8 @@ if (!process.env.JWT_SECRET) {
   console.warn('WARNING: JWT_SECRET is not set in environment variables. Using default secret for development only.');
 }
 
-const tokenExpiry = '30d';
+// Default token expiry time
+const DEFAULT_TOKEN_EXPIRY = '30d';
 
 // Database pool from your existing config
 export const pool = db;
@@ -29,7 +30,7 @@ export interface User extends RowDataPacket {
   LastName: string;
   Role: string;
   Status: string;
-  VerificationCode: string | null;
+  code: string | null;
 }
 
 export async function registerUser(
@@ -51,7 +52,7 @@ export async function registerUser(
   // Generate a random 8-digit verification code
   const verificationCode = generateNumericCode(8);
 
-  let result;
+  let result: { insertId: number };
 
   if (existingUsers.length > 0) {
     // Check if the existing account is inactive
@@ -61,7 +62,7 @@ export async function registerUser(
 
     // If account is inactive, update it instead of creating a new one
     await pool.query<ResultSetHeader>(
-      'UPDATE Users SET PasswordHash = ?, FirstName = ?, LastName = ?, Role = ?, VerificationCode = ? WHERE UserID = ?',
+      'UPDATE Users SET PasswordHash = ?, FirstName = ?, LastName = ?, Role = ?, code = ? WHERE UserID = ?',
       [hashedPassword, firstName, lastName, role, verificationCode, existingUsers[0].UserID]
     );
 
@@ -69,7 +70,7 @@ export async function registerUser(
   } else {
     // Create new user with verification code
     const [insertResult] = await pool.query<ResultSetHeader>(
-      'INSERT INTO Users (Email, PasswordHash, FirstName, LastName, Role, VerificationCode) VALUES (?, ?, ?, ?, ?, ?)',
+      'INSERT INTO Users (Email, PasswordHash, FirstName, LastName, Role, code) VALUES (?, ?, ?, ?, ?, ?)',
       [email, hashedPassword, firstName, lastName, role, verificationCode]
     );
 
@@ -91,7 +92,7 @@ export async function registerUser(
   };
 }
 
-export async function loginUser(email: string, password: string) {
+export async function loginUser(email: string, password: string, rememberMe: boolean = false) {
   // Find user
   const [users] = await pool.query<User[]>(
     'SELECT * FROM Users WHERE Email = ?',
@@ -115,18 +116,33 @@ export async function loginUser(email: string, password: string) {
     throw new Error('Account is not active');
   }
 
-  // Generate JWT token
+  // Set token expiry based on remember me option
+  const expiryTime = rememberMe ? DEFAULT_TOKEN_EXPIRY : '1d';
+
+  // Generate JWT token with user information
   const token = jwt.sign(
     {
       userId: user.UserID,
       email: user.Email,
-      role: user.Role
+      role: user.Role,
+      firstName: user.FirstName,
+      lastName: user.LastName
     },
     jwtSecret,
-    { expiresIn: tokenExpiry }
+    { expiresIn: expiryTime }
   );
 
-  return token;
+  // Return token and user information
+  return {
+    token,
+    user: {
+      userId: user.UserID,
+      email: user.Email,
+      role: user.Role,
+      firstName: user.FirstName,
+      lastName: user.LastName
+    }
+  };
 }
 
 export async function forgotPassword(email: string) {
@@ -152,7 +168,7 @@ export async function forgotPassword(email: string) {
 
   // Save reset code to database
   await pool.query<ResultSetHeader>(
-    'UPDATE Users SET VerificationCode = ? WHERE UserID = ?',
+    'UPDATE Users SET code = ? WHERE UserID = ?',
     [resetCode, user.UserID]
   );
 
@@ -172,7 +188,7 @@ export async function verifyResetCode(email: string, code: string) {
   try {
     // Find user with matching email and verification code
     const [users] = await pool.query<User[]>(
-      'SELECT * FROM Users WHERE Email = ? AND VerificationCode = ?',
+      'SELECT * FROM Users WHERE Email = ? AND code = ?',
       [email, code]
     );
 
@@ -206,7 +222,7 @@ export async function resetPassword(email: string, code: string, newPassword: st
   try {
     // Find user with matching email and verification code
     const [users] = await pool.query<User[]>(
-      'SELECT * FROM Users WHERE Email = ? AND VerificationCode = ?',
+      'SELECT * FROM Users WHERE Email = ? AND code = ?',
       [email, code]
     );
 
@@ -233,7 +249,7 @@ export async function resetPassword(email: string, code: string, newPassword: st
 
     // Update password and clear verification code
     await pool.query<ResultSetHeader>(
-      'UPDATE Users SET PasswordHash = ?, VerificationCode = NULL WHERE UserID = ?',
+      'UPDATE Users SET PasswordHash = ?, code = NULL WHERE UserID = ?',
       [hashedPassword, user.UserID]
     );
 
@@ -275,7 +291,7 @@ export async function verifyEmail(email: string, code: string) {
 
     // Find user with matching email and verification code
     const [users] = await pool.query<User[]>(
-      'SELECT * FROM Users WHERE Email = ? AND VerificationCode = ?',
+      'SELECT * FROM Users WHERE Email = ? AND code = ?',
       [email, code]
     );
 
@@ -293,7 +309,7 @@ export async function verifyEmail(email: string, code: string) {
       const user = usersByEmail[0];
 
       // Check if user is already verified
-      if (user.Status === 'active' && user.VerificationCode === null) {
+      if (user.Status === 'active' && user.code === null) {
         return { success: true, message: 'Your account is already verified. You can login now.' };
       }
 
@@ -307,7 +323,7 @@ export async function verifyEmail(email: string, code: string) {
     if (user.Status === 'active') {
       // Just clear the verification code
       await pool.query<ResultSetHeader>(
-        'UPDATE Users SET VerificationCode = NULL WHERE UserID = ?',
+        'UPDATE Users SET code = NULL WHERE UserID = ?',
         [user.UserID]
       );
       return { success: true, message: 'Your account is already verified. You can login now.' };
@@ -315,7 +331,7 @@ export async function verifyEmail(email: string, code: string) {
 
     // Update user status and clear verification code
     await pool.query<ResultSetHeader>(
-      'UPDATE Users SET Status = "active", VerificationCode = NULL WHERE UserID = ?',
+      'UPDATE Users SET Status = "active", code = NULL WHERE UserID = ?',
       [user.UserID]
     );
 
@@ -350,7 +366,7 @@ export async function resendVerificationCode(email: string) {
 
     // Update the verification code in the database
     await pool.query<ResultSetHeader>(
-      'UPDATE Users SET VerificationCode = ? WHERE UserID = ?',
+      'UPDATE Users SET code = ? WHERE UserID = ?',
       [verificationCode, user.UserID]
     );
 
@@ -400,13 +416,13 @@ export class AuthService {
 
       // If account is inactive, update it instead of deleting and recreating
       await pool.query<ResultSetHeader>(
-        'UPDATE Users SET PasswordHash = ?, FirstName = ?, LastName = ?, Role = ?, VerificationCode = ? WHERE UserID = ?',
+        'UPDATE Users SET PasswordHash = ?, FirstName = ?, LastName = ?, Role = ?, code = ? WHERE UserID = ?',
         [hashedPassword, user.firstName, user.lastName, user.role || 'student', verificationCode, existingUsers[0].UserID]
       );
     } else {
       // Create new user with verification code
       await pool.query<ResultSetHeader>(
-        'INSERT INTO Users (Email, PasswordHash, FirstName, LastName, Role, VerificationCode) VALUES (?, ?, ?, ?, ?, ?)',
+        'INSERT INTO Users (Email, PasswordHash, FirstName, LastName, Role, code) VALUES (?, ?, ?, ?, ?, ?)',
         [user.email, hashedPassword, user.firstName, user.lastName, user.role || 'student', verificationCode]
       );
     }
