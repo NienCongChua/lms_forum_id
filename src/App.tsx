@@ -33,6 +33,14 @@ import Feedback from "./pages/Feedback";
 import TermsOfService from "./pages/TermsOfService";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import CookiePolicy from "./pages/CookiePolicy";
+import Profile from "./pages/Profile";
+import Notifications from "./pages/Notifications";
+import Schedule from "./pages/Schedule";
+import NewCourse from "./pages/NewCourse";
+import NewEbook from "./pages/NewEbook";
+import NewDiscussion from "./pages/NewDiscussion";
+import AdminPanel from "./pages/AdminPanel";
+import AdminAction from "./pages/AdminAction";
 
 // Layout components
 import Navbar from "./components/layout/Navbar";
@@ -70,6 +78,14 @@ const AnimatedRoutes = () => {
         <Route path="/terms" element={<TermsOfService />} />
         <Route path="/privacy" element={<PrivacyPolicy />} />
         <Route path="/cookies" element={<CookiePolicy />} />
+        <Route path="/profile" element={<Profile />} />
+        <Route path="/notifications" element={<Notifications />} />
+        <Route path="/schedule" element={<Schedule />} />
+        <Route path="/new-course" element={<NewCourse />} />
+        <Route path="/new-ebook" element={<NewEbook />} />
+        <Route path="/new-discussion" element={<NewDiscussion />} />
+        <Route path="/admin/panel" element={<AdminPanel />} />
+        <Route path="/admin/action" element={<AdminAction />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </AnimatePresence>

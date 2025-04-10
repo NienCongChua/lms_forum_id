@@ -40,7 +40,7 @@ const transitions = {
   default: {
     type: 'tween',
     ease: 'anticipate',
-    duration: 0.3
+    duration: 0.5
   },
   fade: {
     type: 'tween',
@@ -72,8 +72,8 @@ const backgrounds = {
   gradient: 'bg-gradient-to-br from-white via-blue-50 to-blue-100 dark:from-gray-900 dark:via-blue-950 dark:to-blue-900'
 };
 
-const AnimatedTransition = ({
-  children,
+const AnimatedTransition = ({ 
+  children, 
   className = '',
   type = 'default',
   background = 'none'
