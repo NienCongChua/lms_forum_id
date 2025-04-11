@@ -2,7 +2,7 @@
 CREATE DATABASE IF NOT EXISTS lms_forum_id;
 USE lms_forum_id;
 
--- Bảng Users (Quản lý tất cả người dùng: student, teacher, admin)
+-- USERS
 CREATE TABLE Users (
     UserID INT AUTO_INCREMENT PRIMARY KEY,
     FirstName VARCHAR(255) NOT NULL,
@@ -12,23 +12,30 @@ CREATE TABLE Users (
     Role ENUM('student', 'teacher', 'admin') NOT NULL DEFAULT 'student',
     Status ENUM('active', 'banned', 'inactive') DEFAULT 'inactive',
     code VARCHAR(8) UNIQUE,
+    AvatarURL VARCHAR(255),
+    Bio TEXT,
+    Occupation VARCHAR(255),
+    Location VARCHAR(255),
+    Website VARCHAR(255),
+    Achievements TEXT,
+    RecentActivity TEXT,
     CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     UpdatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
--- Bảng Categories (Danh mục khóa học & diễn đàn)
+-- CATEGORIES
 CREATE TABLE Categories (
     CategoryID INT AUTO_INCREMENT PRIMARY KEY,
     Name VARCHAR(255) UNIQUE NOT NULL
 );
 
--- Bảng Tags (Tag cho diễn đàn và khóa học)
+-- TAGS
 CREATE TABLE Tags (
     TagID INT AUTO_INCREMENT PRIMARY KEY,
     Name VARCHAR(255) UNIQUE NOT NULL
 );
 
--- Bảng Courses (Thông tin khóa học)
+-- COURSES
 CREATE TABLE Courses (
     CourseID INT AUTO_INCREMENT PRIMARY KEY,
     Title VARCHAR(255) NOT NULL,
@@ -46,7 +53,7 @@ CREATE TABLE Courses (
     FOREIGN KEY (InstructorID) REFERENCES Users(UserID)
 );
 
--- Bảng CourseModules (Các module trong khóa học)
+-- COURSE MODULES
 CREATE TABLE CourseModules (
     ModuleID INT AUTO_INCREMENT PRIMARY KEY,
     CourseID INT NOT NULL,
@@ -56,7 +63,7 @@ CREATE TABLE CourseModules (
     FOREIGN KEY (CourseID) REFERENCES Courses(CourseID) ON DELETE CASCADE
 );
 
--- Bảng Lessons (Bài học trong module)
+-- LESSONS
 CREATE TABLE Lessons (
     LessonID INT AUTO_INCREMENT PRIMARY KEY,
     ModuleID INT NOT NULL,
@@ -68,7 +75,7 @@ CREATE TABLE Lessons (
     FOREIGN KEY (ModuleID) REFERENCES CourseModules(ModuleID) ON DELETE CASCADE
 );
 
--- Bảng UserCourses (Học viên đăng ký khóa học)
+-- USER COURSES
 CREATE TABLE UserCourses (
     UserID INT NOT NULL,
     CourseID INT NOT NULL,
@@ -80,7 +87,55 @@ CREATE TABLE UserCourses (
     FOREIGN KEY (CourseID) REFERENCES Courses(CourseID) ON DELETE CASCADE
 );
 
--- Bảng Forums (Diễn đàn thảo luận)
+-- COURSE SCHEDULE
+CREATE TABLE CourseSchedules (
+    ScheduleID INT AUTO_INCREMENT PRIMARY KEY,
+    CourseID INT NOT NULL,
+    StartDate DATE NOT NULL,
+    DurationWeeks INT NOT NULL,
+    MaxCapacity INT DEFAULT 0,
+    FOREIGN KEY (CourseID) REFERENCES Courses(CourseID) ON DELETE CASCADE
+);
+
+-- COURSE REQUIREMENTS
+CREATE TABLE CourseRequirements (
+    RequirementID INT AUTO_INCREMENT PRIMARY KEY,
+    CourseID INT NOT NULL,
+    RequirementText TEXT NOT NULL,
+    FOREIGN KEY (CourseID) REFERENCES Courses(CourseID) ON DELETE CASCADE
+);
+
+-- COURSE OUTCOMES
+CREATE TABLE CourseOutcomes (
+    OutcomeID INT AUTO_INCREMENT PRIMARY KEY,
+    CourseID INT NOT NULL,
+    OutcomeText TEXT NOT NULL,
+    FOREIGN KEY (CourseID) REFERENCES Courses(CourseID) ON DELETE CASCADE
+);
+
+-- COURSE REVIEWS
+CREATE TABLE CourseReviews (
+    ReviewID INT AUTO_INCREMENT PRIMARY KEY,
+    CourseID INT NOT NULL,
+    UserID INT NOT NULL,
+    Rating TINYINT NOT NULL CHECK (Rating BETWEEN 1 AND 5),
+    Comment TEXT,
+    CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (CourseID) REFERENCES Courses(CourseID) ON DELETE CASCADE,
+    FOREIGN KEY (UserID) REFERENCES Users(UserID) ON DELETE CASCADE
+);
+
+-- SAVE FOR LATER
+CREATE TABLE SavedCourses (
+    UserID INT NOT NULL,
+    CourseID INT NOT NULL,
+    SavedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (UserID, CourseID),
+    FOREIGN KEY (UserID) REFERENCES Users(UserID) ON DELETE CASCADE,
+    FOREIGN KEY (CourseID) REFERENCES Courses(CourseID) ON DELETE CASCADE
+);
+
+-- FORUMS
 CREATE TABLE Forums (
     ForumID INT AUTO_INCREMENT PRIMARY KEY,
     Title VARCHAR(255) NOT NULL,
@@ -96,7 +151,7 @@ CREATE TABLE Forums (
     FOREIGN KEY (AuthorID) REFERENCES Users(UserID)
 );
 
--- Bảng Comments (Bình luận trên diễn đàn)
+-- COMMENTS
 CREATE TABLE Comments (
     CommentID INT AUTO_INCREMENT PRIMARY KEY,
     ForumID INT NOT NULL,
@@ -110,7 +165,7 @@ CREATE TABLE Comments (
     FOREIGN KEY (ParentCommentID) REFERENCES Comments(CommentID) ON DELETE CASCADE
 );
 
--- Bảng ForumTags (Quan hệ nhiều-nhiều giữa Forums và Tags)
+-- FORUM TAGS
 CREATE TABLE ForumTags (
     ForumID INT NOT NULL,
     TagID INT NOT NULL,
@@ -119,7 +174,7 @@ CREATE TABLE ForumTags (
     FOREIGN KEY (TagID) REFERENCES Tags(TagID) ON DELETE CASCADE
 );
 
--- Bảng CourseTags (Quan hệ nhiều-nhiều giữa Courses và Tags)
+-- COURSE TAGS
 CREATE TABLE CourseTags (
     CourseID INT NOT NULL,
     TagID INT NOT NULL,
@@ -128,33 +183,122 @@ CREATE TABLE CourseTags (
     FOREIGN KEY (TagID) REFERENCES Tags(TagID) ON DELETE CASCADE
 );
 
--- Bảng Resources (Tài liệu học tập)
+-- RESOURCES
 CREATE TABLE Resources (
     ResourceID INT AUTO_INCREMENT PRIMARY KEY,
     Title VARCHAR(255) NOT NULL,
     Description TEXT,
     Type VARCHAR(50),
     URL VARCHAR(255),
-    FilePath VARCHAR(255) NULL,
+    FilePath VARCHAR(255),
     UploadDate TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     CategoryID INT,
     FOREIGN KEY (CategoryID) REFERENCES Categories(CategoryID)
 );
 
--- Bảng Notifications (Thông báo cho người dùng)
+-- EBOOKS
+CREATE TABLE EBooks (
+    EBookID INT AUTO_INCREMENT PRIMARY KEY,
+    Title VARCHAR(255) NOT NULL,
+    Author VARCHAR(255),
+    Description TEXT,
+    DifficultyLevel ENUM('Beginner', 'Intermediate', 'Advanced'),
+    Price DECIMAL(10,2) DEFAULT 0.00,
+    IsPublished BOOLEAN DEFAULT FALSE,
+    CategoryID INT,
+    CoverImageURL VARCHAR(255),
+    FOREIGN KEY (CategoryID) REFERENCES Categories(CategoryID)
+);
+
+-- EBOOK TAGS
+CREATE TABLE EBookTags (
+    EBookID INT NOT NULL,
+    TagID INT NOT NULL,
+    PRIMARY KEY (EBookID, TagID),
+    FOREIGN KEY (EBookID) REFERENCES EBooks(EBookID) ON DELETE CASCADE,
+    FOREIGN KEY (TagID) REFERENCES Tags(TagID) ON DELETE CASCADE
+);
+
+-- EBOOK CHAPTERS
+CREATE TABLE EBookChapters (
+    ChapterID INT AUTO_INCREMENT PRIMARY KEY,
+    EBookID INT NOT NULL,
+    ChapterOrder INT NOT NULL,
+    Title VARCHAR(255),
+    Description TEXT,
+    FOREIGN KEY (EBookID) REFERENCES EBooks(EBookID) ON DELETE CASCADE
+);
+
+-- CONTACT
+CREATE TABLE Contacts (
+    ContactID INT AUTO_INCREMENT PRIMARY KEY,
+    Name VARCHAR(255) NOT NULL,
+    Email VARCHAR(255),
+    Topic VARCHAR(100),
+    Message TEXT NOT NULL,
+    CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- FEEDBACK
+CREATE TABLE Feedbacks (
+    FeedbackID INT AUTO_INCREMENT PRIMARY KEY,
+    Type ENUM('general', 'feature', 'bug') NOT NULL,
+    Feel VARCHAR(100),
+    FeatureTitle VARCHAR(255),
+    Description TEXT,
+    Importance ENUM('Nice to have', 'Important', 'Critical'),
+    IssueSummary TEXT,
+    StepsToReproduce TEXT,
+    ExpectedBehavior TEXT,
+    BrowserInfo TEXT,
+    Email VARCHAR(255),
+    CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- NOTIFICATIONS
 CREATE TABLE Notifications (
     NotificationID INT AUTO_INCREMENT PRIMARY KEY,
     UserID INT NOT NULL,
     Title VARCHAR(255) NOT NULL,
     Content TEXT NOT NULL,
     Type ENUM('system', 'course', 'forum', 'message') NOT NULL DEFAULT 'system',
-    RelatedID INT NULL,
+    RelatedID INT,
     IsRead BOOLEAN DEFAULT FALSE,
     CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (UserID) REFERENCES Users(UserID) ON DELETE CASCADE
 );
 
--- Thêm Index để tối ưu truy vấn
+-- CHAT SYSTEM
+
+-- Conversations
+CREATE TABLE Conversations (
+    ConversationID INT AUTO_INCREMENT PRIMARY KEY,
+    CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- ConversationParticipants
+CREATE TABLE ConversationParticipants (
+    ConversationID INT NOT NULL,
+    UserID INT NOT NULL,
+    PRIMARY KEY (ConversationID, UserID),
+    FOREIGN KEY (ConversationID) REFERENCES Conversations(ConversationID) ON DELETE CASCADE,
+    FOREIGN KEY (UserID) REFERENCES Users(UserID) ON DELETE CASCADE
+);
+
+-- Messages
+CREATE TABLE Messages (
+    MessageID INT AUTO_INCREMENT PRIMARY KEY,
+    ConversationID INT NOT NULL,
+    SenderID INT NOT NULL,
+    MessageType ENUM('text', 'image', 'video', 'file') DEFAULT 'text',
+    Content TEXT,
+    FileURL VARCHAR(255),
+    CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (ConversationID) REFERENCES Conversations(ConversationID) ON DELETE CASCADE,
+    FOREIGN KEY (SenderID) REFERENCES Users(UserID) ON DELETE CASCADE
+);
+
+-- Index
 CREATE INDEX idx_tagid_forumtags ON ForumTags(TagID);
 CREATE INDEX idx_tagid_coursetags ON CourseTags(TagID);
 CREATE INDEX idx_userid_notifications ON Notifications(UserID);
